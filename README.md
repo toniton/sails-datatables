@@ -106,7 +106,17 @@ Nested data are automatically populated for you using the dot notations in your 
 
 ### Advanced
 You can add some extra data to your request to perform advanced functions like `filter` or `range` on a particular query. Cool rite `:-)`?
-
+```Javascript
+        {
+            //filter only records that have a color of yellow
+            data: "color",
+            searchable:  true,
+            search: {
+                value: "yellow"
+            }
+        };
+```
+or
 ```Javascript
         {
             data: "createdAt",
