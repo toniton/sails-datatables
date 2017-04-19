@@ -5,12 +5,12 @@ var _ = require('lodash');
 module.exports.getData = function (model, options) {
     if (!model) {
         return new Promise(function (resolve, reject) {
-            reject({error: 'Model doesn\'t exist'});
+            reject({ error: 'Model doesn\'t exist' });
         });
     }
 
     //possible column options as default
-    var _columns = [{data: '', name: '', searchable: false, orderable: false, search: {value: ''}}]
+    var _columns = [{ data: '', name: '', searchable: false, orderable: false, search: { value: '' } }]
 
     //possible options data as default
     var _options = {
@@ -18,8 +18,8 @@ module.exports.getData = function (model, options) {
         columns: _columns,
         start: 0,
         length: 10,
-        search: {value: '', regex: false},
-        order: [{column: 0, dir: 'asc'}]
+        search: { value: '', regex: false },
+        order: [{ column: 0, dir: 'asc' }]
     };
 
     //merge both Object, options and _options into _options
@@ -80,24 +80,26 @@ module.exports.getData = function (model, options) {
     } else {
         whereQuery = {}
     }
-
-    var sortColumnData = _options.columns[+_options.order[0].column];
-    var sortColumn = _options.columns[+_options.order[0].column].data;
-    if (_.includes(sortColumn, '.')) {
-        sortColumn = sortColumnData.data.substr(0, sortColumnData.data.indexOf('.'));
-    }
-
+    
+    var sortColumn = {};
+    _.forEach(_options.order, function (value, key) {
+        console.log(value, key);
+        var sortBy = _options.columns[value.column].data;
+        if (_.includes(sortBy, '.')) {
+            sortBy = sortBy.substr(0, sortBy.indexOf('.'));
+        }
+        var sortDir = value.dir == 'asc' ? 1 : 0;
+        sortColumn[sortBy] = sortDir;
+    });
+    
     //find the database on the query and total items in the database data[0] and data[1] repectively
     return Promise.all([model.find({
         where: whereQuery,
         skip: +_options.start,
         limit: +_options.length,
-        sort: sortColumn + ' ' + _options.order[0].dir.toUpperCase()
+        sort: sortColumn
     }).populateAll(), model.count(), model.count({
-        where: whereQuery,
-        skip: +_options.start,
-        limit: +_options.length,
-        sort: sortColumn + ' ' + _options.order[0].dir.toUpperCase()
+        where: whereQuery
     })]).then(function (data) {
         _response.recordsTotal = data[1];
         _response.recordsFiltered = data[2];
@@ -113,7 +115,7 @@ module.exports.getData = function (model, options) {
 module.exports.getColumns = function (model) {
     if (!model) {
         return new Promise(function (resolve, reject) {
-            reject({error: 'Model doesn\'t exist'});
+            reject({ error: 'Model doesn\'t exist' });
         });
     }
     var attributes = _.keys(model._attributes);
@@ -121,7 +123,7 @@ module.exports.getColumns = function (model) {
         if (attributes) {
             resolve(attributes);
         } else {
-            reject({error: 'Error fetching attribute for this model'});
+            reject({ error: 'Error fetching attribute for this model' });
         }
     })
 };
