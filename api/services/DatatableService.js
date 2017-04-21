@@ -9,17 +9,36 @@ module.exports.getData = function (model, options) {
         });
     }
 
-    //possible column options as default
-    var _columns = [{ data: '', name: '', searchable: false, orderable: false, search: { value: '' } }]
+    //default column options
+    var _columns = [
+        {
+            data: '',
+            name: '',
+            searchable: false,
+            orderable: false,
+            search: {
+                regex: false,
+                value: ''
+            }
+        }
+    ];
 
-    //possible options data as default
+    //default datatable options
     var _options = {
         draw: 0,
         columns: _columns,
         start: 0,
         length: 10,
-        search: { value: '', regex: false },
-        order: [{ column: 0, dir: 'asc' }]
+        search: {
+            value: '',
+            regex: false
+        },
+        order: [
+            {
+                column: 0,
+                dir: 'asc'
+            }
+        ]
     };
 
     //merge both Object, options and _options into _options
@@ -38,52 +57,43 @@ module.exports.getData = function (model, options) {
     //build where criteria
     var where = [], whereQuery = {}, select = [];
 
-    if (_options.columns.length) {
-        if (_options.columns[0].data != 0) {
-            _options.columns.forEach(function (column, index) {
-                if (column.searchable) {
-                    if (!(column.search.value == "")) {
-                        if (_.isPlainObject(column.search.value)) {
-                            if ((column.search.value.from != "") && (column.search.value.to != "")) {
-                                whereQuery[column.data] = {
-                                    '>=': column.search.value.from,
-                                    '<': column.search.value.to
-                                };
-                            }
-                        } else {
-                            whereQuery[column.data] = column.search.value;
-                        }
-                    }
-                    if (_.includes(column.data, '.')) {//accesing object attribute for value
-                        var col = column.data.substr(0, column.data.indexOf('.'));
-                        var filter = {};
-                        filter[col] = {
-                            'contains': _options.search.value
-                        };
-                        //filter[column.data] = {
-                        //    'contains': _options.search.value
-                        //};
-                        select.push(col);
-                        where.push(filter);
-                    } else {
-                        var filter = {};
-                        filter[column.data] = {
-                            'contains': _options.search.value
-                        };
-                        select.push(column.data);
-                        where.push(filter);
-                    }
+    if (_.isArray(_options.columns)) {
+        _options.columns.forEach(function (column, index) {
+            // This handles the column search property
+            if (_.isNull(column.data) || !column.searchable) {
+                return true;
+            }
+            if (_.isPlainObject(column.search.value)) {
+                if ((column.search.value.from != "") && (column.search.value.to != "")) {
+                    whereQuery[column.data] = {
+                        '>=': column.search.value.from,
+                        '<': column.search.value.to
+                    };
                 }
-            });
-        }
-        whereQuery["or"] = where;
-    } else {
-        whereQuery = {}
+            } else if (_.isString(column.search.value)) {
+                var col = column.data.split('.')[0];
+                if (!_.isEqual(column.search.value, "")) {
+                    whereQuery[col] = column.search.value;
+                }
+            } else if (_.isNumber(column.search.value)) {
+                var col = column.data.split('.')[0];
+                whereQuery[col] = column.search.value;
+            }
+
+            // This handles the global search function of this column
+            var col = column.data.split('.')[0];
+            var filter = {};
+            filter[col] = {
+                'contains': _options.search.value
+            };
+            select.push(col);
+            where.push(filter);
+        });
     }
-    
+    whereQuery["or"] = where;
+
     var sortColumn = {};
     _.forEach(_options.order, function (value, key) {
-        console.log(value, key);
         var sortBy = _options.columns[value.column].data;
         if (_.includes(sortBy, '.')) {
             sortBy = sortBy.substr(0, sortBy.indexOf('.'));
@@ -91,7 +101,7 @@ module.exports.getData = function (model, options) {
         var sortDir = value.dir == 'asc' ? 1 : 0;
         sortColumn[sortBy] = sortDir;
     });
-    
+
     //find the database on the query and total items in the database data[0] and data[1] repectively
     return Promise.all([model.find({
         where: whereQuery,
