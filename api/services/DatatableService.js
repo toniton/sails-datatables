@@ -58,36 +58,35 @@ module.exports.getData = function (model, options) {
     var where = [], whereQuery = {}, select = [];
 
     if (_.isArray(_options.columns)) {
-        _options.columns.forEach(function (column, index) {
+        _.forEach(_options.columns, function (column, index) {
             // This handles the column search property
-            if (_.isNull(column.data) || !column.searchable) {
-                return true;
-            }
-            if (_.isPlainObject(column.search.value)) {
-                if ((column.search.value.from != "") && (column.search.value.to != "")) {
-                    whereQuery[column.data] = {
-                        '>=': column.search.value.from,
-                        '<': column.search.value.to
-                    };
-                }
-            } else if (_.isString(column.search.value)) {
-                var col = column.data.split('.')[0];
-                if (!_.isEqual(column.search.value, "")) {
+            if (_.isString(column.data) && column.searchable) {
+                if (_.isPlainObject(column.search.value)) {
+                    if ((column.search.value.from != "") && (column.search.value.to != "")) {
+                        whereQuery[column.data] = {
+                            '>=': column.search.value.from,
+                            '<': column.search.value.to
+                        };
+                    }
+                } else if (_.isString(column.search.value)) {
+                    var col = column.data.split('.')[0];
+                    if (!_.isEqual(column.search.value, "")) {
+                        whereQuery[col] = column.search.value;
+                    }
+                } else if (_.isNumber(column.search.value)) {
+                    var col = column.data.split('.')[0];
                     whereQuery[col] = column.search.value;
                 }
-            } else if (_.isNumber(column.search.value)) {
-                var col = column.data.split('.')[0];
-                whereQuery[col] = column.search.value;
-            }
 
-            // This handles the global search function of this column
-            var col = column.data.split('.')[0];
-            var filter = {};
-            filter[col] = {
-                'contains': _options.search.value
-            };
-            select.push(col);
-            where.push(filter);
+                // This handles the global search function of this column
+                var col = column.data.split('.')[0];
+                var filter = {};
+                filter[col] = {
+                    'contains': _options.search.value
+                };
+                select.push(col);
+                where.push(filter);
+            }
         });
     }
     whereQuery["or"] = where;
