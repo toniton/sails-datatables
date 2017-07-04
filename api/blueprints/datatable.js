@@ -9,6 +9,6 @@ module.exports = function datatable(req, res) {
     DatatableService.getData(model, options).then(function (data) {
         return res.ok(data)
     }).catch(function (error) {
-        return res.send(error)
+        return res.badRequest(error)
     });
 };
